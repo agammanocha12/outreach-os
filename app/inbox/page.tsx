@@ -36,35 +36,35 @@ export default function InboxPage() {
   const other = replies.filter(r => r.category !== 'HOT')
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-8 space-y-5 max-w-3xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inbox</h1>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <h1 className="text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Inbox</h1>
+          <p className="text-[13px] text-[#86868b] mt-0.5">
             {replies.length} unhandled {replies.length === 1 ? 'reply' : 'replies'}
           </p>
         </div>
-        <button onClick={fetchReplies} className="text-gray-400 hover:text-gray-600 transition-colors">
-          <RefreshCw size={18} />
+        <button onClick={fetchReplies} className="text-[#86868b] hover:text-[#1d1d1f] transition-colors p-2 rounded-xl hover:bg-white">
+          <RefreshCw size={16} />
         </button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <RefreshCw className="animate-spin text-gray-400" size={24} />
+          <RefreshCw className="animate-spin text-[#86868b]" size={22} />
         </div>
       ) : replies.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <p className="text-gray-400 text-lg">No unhandled replies</p>
-          <p className="text-gray-300 text-sm mt-1">Check back after sends go out</p>
+        <div className="bg-white rounded-2xl p-14 text-center shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-[#e0e0e5]/60">
+          <p className="text-[17px] font-medium text-[#1d1d1f]">All clear</p>
+          <p className="text-[13px] text-[#86868b] mt-1">No unhandled replies. Check back after sends go out.</p>
         </div>
       ) : (
         <div className="space-y-4">
           {hot.length > 0 && (
             <>
-              <h2 className="text-sm font-semibold text-red-600 uppercase tracking-wide">
-                🔥 Hot — reply within the hour
-              </h2>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-[#ff3b30] uppercase tracking-widest">🔥 Hot — reply within the hour</span>
+              </div>
               {hot.map(r => (
                 <ReplyCard key={r.id} reply={r} onHandled={handleHandled} />
               ))}
@@ -73,9 +73,9 @@ export default function InboxPage() {
           {other.length > 0 && (
             <>
               {hot.length > 0 && (
-                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide pt-2">
-                  Other replies
-                </h2>
+                <div className="pt-2">
+                  <span className="text-[11px] font-semibold text-[#86868b] uppercase tracking-widest">Other replies</span>
+                </div>
               )}
               {other.map(r => (
                 <ReplyCard key={r.id} reply={r} onHandled={handleHandled} />

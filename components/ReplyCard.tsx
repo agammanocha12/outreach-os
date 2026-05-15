@@ -3,22 +3,17 @@ import { useState } from 'react'
 import { CheckCircle, ExternalLink } from 'lucide-react'
 import type { Reply, ReplyCategory } from '@/lib/types'
 
-const CATEGORY_COLORS: Record<ReplyCategory, string> = {
-  HOT: 'bg-red-100 text-red-700 border-red-200',
-  WARM: 'bg-orange-100 text-orange-700 border-orange-200',
-  COLD: 'bg-gray-100 text-gray-600 border-gray-200',
-  COMPETITOR: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  OOO: 'bg-blue-100 text-blue-700 border-blue-200',
-  UNKNOWN: 'bg-gray-100 text-gray-600 border-gray-200',
+const CATEGORY_STYLES: Record<ReplyCategory, { bg: string; text: string; dot: string }> = {
+  HOT:        { bg: '#fff0f0', text: '#c0392b', dot: '#ff3b30' },
+  WARM:       { bg: '#fff4e0', text: '#bf6000', dot: '#ff9f0a' },
+  COLD:       { bg: '#f5f5f7', text: '#6e6e73', dot: '#86868b' },
+  COMPETITOR: { bg: '#fff9e0', text: '#946000', dot: '#ffd60a' },
+  OOO:        { bg: '#e8f0fe', text: '#0055b3', dot: '#0071e3' },
+  UNKNOWN:    { bg: '#f5f5f7', text: '#6e6e73', dot: '#86868b' },
 }
 
 const CATEGORY_EMOJI: Record<ReplyCategory, string> = {
-  HOT: '🔥',
-  WARM: '📬',
-  COLD: '❄️',
-  COMPETITOR: '⚡',
-  OOO: '✈️',
-  UNKNOWN: '❓',
+  HOT: '🔥', WARM: '📬', COLD: '❄️', COMPETITOR: '⚡', OOO: '✈️', UNKNOWN: '❓',
 }
 
 interface Props {
@@ -30,6 +25,7 @@ export default function ReplyCard({ reply, onHandled }: Props) {
   const [loading, setLoading] = useState(false)
   const [response, setResponse] = useState(reply.suggested_response)
 
+  const style = CATEGORY_STYLES[reply.category]
   const gmailComposeUrl = `https://mail.google.com/mail/u/0/?view=cm&fs=1&body=${encodeURIComponent(response)}`
 
   async function handleMark() {
@@ -48,49 +44,48 @@ export default function ReplyCard({ reply, onHandled }: Props) {
 
   return (
     <div
-      className={`bg-white rounded-xl border p-5 ${
-        reply.category === 'HOT' ? 'border-red-300 shadow-sm' : 'border-gray-200'
-      }`}
+      className="bg-white rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border"
+      style={{ borderColor: reply.category === 'HOT' ? '#ffb3ae' : '#e0e0e5' }}
     >
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-4">
         <div>
-          <div className="font-semibold text-gray-900">{reply.business_name}</div>
-          <div className="text-xs text-gray-400 mt-0.5">
+          <div className="font-semibold text-[15px] text-[#1d1d1f]">{reply.business_name}</div>
+          <div className="text-[12px] text-[#86868b] mt-0.5">
             {new Date(reply.received_at).toLocaleString()}
           </div>
         </div>
         <span
-          className={`text-xs font-semibold px-2 py-1 rounded-full border ${
-            CATEGORY_COLORS[reply.category]
-          }`}
+          className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+          style={{ background: style.bg, color: style.text }}
         >
           {CATEGORY_EMOJI[reply.category]} {reply.category}
         </span>
       </div>
 
-      <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 mb-4 whitespace-pre-wrap">
+      <div className="rounded-xl p-3.5 text-[13px] text-[#1d1d1f] mb-4 whitespace-pre-wrap leading-relaxed bg-[#f5f5f7]">
         {reply.body}
       </div>
 
       {reply.category !== 'COLD' && reply.category !== 'OOO' && (
         <div className="mb-4">
-          <label className="text-xs font-medium text-gray-500 block mb-1">
-            Suggested reply (edit before sending)
+          <label className="text-[11px] font-medium text-[#86868b] uppercase tracking-wide block mb-1.5">
+            Suggested reply
           </label>
           <textarea
             value={response}
             onChange={e => setResponse(e.target.value)}
             rows={3}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-xl px-3.5 py-2.5 text-[13px] bg-[#f5f5f7] border-0 resize-none focus:outline-none focus:ring-2 focus:ring-[#0071e3]/30 text-[#1d1d1f]"
           />
           <a
             href={gmailComposeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 mt-2 text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-1.5 mt-2 text-[13px] font-medium px-3.5 py-2 rounded-xl transition-colors text-white"
+            style={{ background: '#0071e3' }}
           >
             <ExternalLink size={13} />
-            Send via Gmail
+            Open in Gmail
           </a>
         </div>
       )}
@@ -98,7 +93,7 @@ export default function ReplyCard({ reply, onHandled }: Props) {
       <button
         onClick={handleMark}
         disabled={loading}
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-green-600 disabled:opacity-50 transition-colors"
+        className="inline-flex items-center gap-1.5 text-[13px] text-[#86868b] hover:text-[#34c759] disabled:opacity-50 transition-colors"
       >
         <CheckCircle size={15} />
         {loading ? 'Marking…' : 'Mark handled'}

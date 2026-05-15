@@ -32,34 +32,39 @@ export default function Sidebar() {
   }, [])
 
   return (
-    <aside className="w-56 bg-gray-900 text-white flex flex-col min-h-screen shrink-0">
-      <div className="p-5 border-b border-gray-700">
-        <h1 className="font-bold text-base">Outreach OS</h1>
-        <p className="text-xs text-gray-400 mt-0.5">Atlas Reception</p>
+    <aside className="w-52 flex flex-col min-h-screen shrink-0 bg-[#1d1d1f]">
+      <div className="px-5 pt-7 pb-6">
+        <div className="text-white font-semibold text-[15px] tracking-tight">Outreach OS</div>
+        <div className="text-[#6e6e73] text-xs mt-0.5">Atlas Reception</div>
       </div>
-      <nav className="flex-1 p-3 space-y-0.5">
-        {nav.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-              pathname === href
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-            }`}
-          >
-            <Icon size={17} />
-            <span>{label}</span>
-            {label === 'Inbox' && unread > 0 && (
-              <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                {unread > 9 ? '9+' : unread}
-              </span>
-            )}
-          </Link>
-        ))}
+
+      <nav className="flex-1 px-3 space-y-0.5">
+        {nav.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all ${
+                active
+                  ? 'bg-white/10 text-white font-medium'
+                  : 'text-[#98989d] hover:bg-white/[0.06] hover:text-white'
+              }`}
+            >
+              <Icon size={16} strokeWidth={active ? 2.2 : 1.8} />
+              <span>{label}</span>
+              {label === 'Inbox' && unread > 0 && (
+                <span className="ml-auto bg-[#ff3b30] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </Link>
+          )
+        })}
       </nav>
-      <div className="p-4 border-t border-gray-700">
-        <p className="text-xs text-gray-500">atlasreception4you@gmail.com</p>
+
+      <div className="px-5 py-5 border-t border-white/[0.06]">
+        <p className="text-[11px] text-[#48484a] truncate">atlasreception4you@gmail.com</p>
       </div>
     </aside>
   )

@@ -21,24 +21,42 @@ interface SettingsData {
   paused: boolean
 }
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-[#e0e0e5]/60 overflow-hidden">
+      <div className="px-6 py-4 border-b border-[#f0f0f5]">
+        <h2 className="text-[14px] font-semibold text-[#1d1d1f]">{title}</h2>
+      </div>
+      <div className="px-6 py-5 space-y-4">{children}</div>
+    </div>
+  )
+}
+
+function Field({ label, value, onChange, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string
+}) {
+  return (
+    <div>
+      <label className="text-[11px] font-medium text-[#86868b] uppercase tracking-wide block mb-1.5">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl px-3.5 py-2.5 text-[13px] bg-[#f5f5f7] border-0 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/30 text-[#1d1d1f] placeholder-[#86868b]"
+      />
+    </div>
+  )
+}
+
 function SettingsInner() {
   const params = useSearchParams()
   const justConnected = params.get('connected') === '1'
 
   const [settings, setSettings] = useState<SettingsData>({
-    full_name: '',
-    business_name: '',
-    phone: '',
-    physical_address: '',
-    gmail_address: '',
-    send_rate: 40,
-    demo_link: '',
-    booking_link: '',
-    monthly_price: 400,
-    niche: '',
-    cities: [],
-    value_prop: '',
-    paused: true,
+    full_name: '', business_name: '', phone: '', physical_address: '',
+    gmail_address: '', send_rate: 40, demo_link: '', booking_link: '',
+    monthly_price: 400, niche: '', cities: [], value_prop: '', paused: true,
   })
   const [gmailConnected, setGmailConnected] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -54,19 +72,12 @@ function SettingsInner() {
         if (res.ok) {
           const d = await res.json()
           setSettings({
-            full_name: d.full_name ?? '',
-            business_name: d.business_name ?? '',
-            phone: d.phone ?? '',
-            physical_address: d.physical_address ?? '',
-            gmail_address: d.gmail_address ?? '',
-            send_rate: d.send_rate ?? 40,
-            demo_link: d.demo_link ?? '',
-            booking_link: d.booking_link ?? '',
-            monthly_price: d.monthly_price ?? 400,
-            niche: d.niche ?? '',
-            cities: d.cities ?? [],
-            value_prop: d.value_prop ?? '',
-            paused: d.paused ?? true,
+            full_name: d.full_name ?? '', business_name: d.business_name ?? '',
+            phone: d.phone ?? '', physical_address: d.physical_address ?? '',
+            gmail_address: d.gmail_address ?? '', send_rate: d.send_rate ?? 40,
+            demo_link: d.demo_link ?? '', booking_link: d.booking_link ?? '',
+            monthly_price: d.monthly_price ?? 400, niche: d.niche ?? '',
+            cities: d.cities ?? [], value_prop: d.value_prop ?? '', paused: d.paused ?? true,
           })
           setGmailConnected(!!d.gmail_connected || justConnected)
         }
@@ -83,16 +94,9 @@ function SettingsInner() {
       const res = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...settings,
-          cities: settings.cities,
-        }),
+        body: JSON.stringify(settings),
       })
-      if (res.ok) {
-        setSaveMsg('✓ Saved')
-      } else {
-        setSaveMsg('Error saving')
-      }
+      setSaveMsg(res.ok ? '✓ Saved' : 'Error saving')
     } catch {
       setSaveMsg('Error saving')
     } finally {
@@ -106,11 +110,7 @@ function SettingsInner() {
     setTelegramMsg('')
     try {
       const res = await fetch('/api/telegram/test', { method: 'POST' })
-      if (res.ok) {
-        setTelegramMsg('✓ Message sent — check Telegram')
-      } else {
-        setTelegramMsg('Failed — check TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env.local')
-      }
+      setTelegramMsg(res.ok ? '✓ Message sent — check Telegram' : 'Failed — check your token and chat ID')
     } catch {
       setTelegramMsg('Failed to send')
     } finally {
@@ -122,175 +122,140 @@ function SettingsInner() {
     setSettings(prev => ({ ...prev, [key]: value }))
   }
 
-  if (loading) return <div className="p-6 text-gray-400">Loading settings…</div>
+  if (loading) return <div className="p-8 text-[13px] text-[#86868b]">Loading settings…</div>
 
   return (
-    <div className="p-6 space-y-6 max-w-2xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+    <div className="p-8 space-y-4 max-w-2xl">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h1 className="text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Settings</h1>
+        </div>
         <div className="flex items-center gap-3">
-          {saveMsg && <span className="text-sm text-gray-500">{saveMsg}</span>}
+          {saveMsg && <span className="text-[13px] text-[#6e6e73]">{saveMsg}</span>}
           <button
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium text-white disabled:opacity-50 transition-opacity hover:opacity-90"
+            style={{ background: '#0071e3' }}
           >
-            <Save size={15} />
+            <Save size={14} />
             {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
       </div>
 
       {justConnected && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-700">
-          Gmail connected successfully! Sending is enabled.
+        <div className="bg-[#e6f9ed] rounded-2xl p-4 text-[13px] text-[#1a7a3a] font-medium">
+          Gmail connected successfully — sending is enabled.
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-800">Sending Status</h2>
+      <Section title="Sending Status">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[13px] font-medium text-[#1d1d1f]">
+              {settings.paused ? 'Paused' : 'Running'}
+            </p>
+            <p className="text-[12px] text-[#86868b] mt-0.5">
+              {settings.paused
+                ? 'No emails will be sent. Flip to start.'
+                : 'Emails send at 10am ET on weekdays.'}
+            </p>
+          </div>
           <button
             onClick={() => update('paused', !settings.paused)}
-            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-              settings.paused ? 'bg-gray-300' : 'bg-green-500'
-            }`}
+            className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors"
+            style={{ background: settings.paused ? '#d2d2d7' : '#34c759' }}
           >
             <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
-                settings.paused ? 'translate-x-1' : 'translate-x-6'
-              }`}
+              className="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform"
+              style={{ transform: settings.paused ? 'translateX(4px)' : 'translateX(24px)' }}
             />
           </button>
         </div>
-        <p className="text-sm text-gray-500">
-          {settings.paused
-            ? '⏸ Paused — no emails will be sent. Flip to start.'
-            : '▶ Running — emails send at 10am and 2pm weekdays.'}
-        </p>
-      </div>
+      </Section>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <h2 className="font-semibold text-gray-800">Gmail</h2>
+      <Section title="Gmail">
         <ConnectGmailButton
           connected={gmailConnected}
           gmailAddress={settings.gmail_address || null}
           onDisconnect={() => setGmailConnected(false)}
         />
-      </div>
+      </Section>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <h2 className="font-semibold text-gray-800">Your Info</h2>
+      <Section title="Your Info">
         <Field label="Full name" value={settings.full_name} onChange={v => update('full_name', v)} />
         <Field label="Business name" value={settings.business_name} onChange={v => update('business_name', v)} />
         <Field label="Phone (appears in emails)" value={settings.phone} onChange={v => update('phone', v)} />
         <Field label="Mailing address (CAN-SPAM)" value={settings.physical_address} onChange={v => update('physical_address', v)} />
-      </div>
+      </Section>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <h2 className="font-semibold text-gray-800">Campaign</h2>
+      <Section title="Campaign">
         <div>
-          <label className="text-xs font-medium text-gray-500 block mb-1">Monthly price ($)</label>
+          <label className="text-[11px] font-medium text-[#86868b] uppercase tracking-wide block mb-1.5">Monthly price ($)</label>
           <input
             type="number"
             value={settings.monthly_price}
             onChange={e => update('monthly_price', parseInt(e.target.value) || 0)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-xl px-3.5 py-2.5 text-[13px] bg-[#f5f5f7] border-0 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/30 text-[#1d1d1f] w-32"
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-500 block mb-1">
-            Daily send rate ({settings.send_rate}/day)
+          <label className="text-[11px] font-medium text-[#86868b] uppercase tracking-wide block mb-1.5">
+            Daily send rate — {settings.send_rate}/day
           </label>
           <input
-            type="range"
-            min={10}
-            max={50}
-            step={5}
+            type="range" min={10} max={50} step={5}
             value={settings.send_rate}
             onChange={e => update('send_rate', parseInt(e.target.value))}
-            className="w-48"
+            className="w-48 accent-[#0071e3]"
           />
-          <div className="flex justify-between text-xs text-gray-400 w-48">
-            <span>10 (safe)</span>
-            <span>40 (rec.)</span>
-            <span>50 (max)</span>
+          <div className="flex justify-between text-[11px] text-[#86868b] w-48 mt-1">
+            <span>10</span><span>40 rec.</span><span>50</span>
           </div>
         </div>
         <Field label="Niche (e.g. HVAC and plumbing)" value={settings.niche} onChange={v => update('niche', v)} />
         <div>
-          <label className="text-xs font-medium text-gray-500 block mb-1">
-            Target cities (comma-separated)
-          </label>
+          <label className="text-[11px] font-medium text-[#86868b] uppercase tracking-wide block mb-1.5">Target cities (comma-separated)</label>
           <textarea
             value={settings.cities.join(', ')}
             onChange={e => update('cities', e.target.value.split(',').map(c => c.trim()).filter(Boolean))}
             rows={2}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-xl px-3.5 py-2.5 text-[13px] bg-[#f5f5f7] border-0 resize-none focus:outline-none focus:ring-2 focus:ring-[#0071e3]/30 text-[#1d1d1f]"
           />
         </div>
         <Field label="Value prop (one sentence)" value={settings.value_prop} onChange={v => update('value_prop', v)} />
-      </div>
+      </Section>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <h2 className="font-semibold text-gray-800">Links</h2>
+      <Section title="Links">
         <Field label="Demo video link (Loom)" value={settings.demo_link} onChange={v => update('demo_link', v)} placeholder="https://loom.com/share/..." />
         <Field label="Calendly booking link" value={settings.booking_link} onChange={v => update('booking_link', v)} placeholder="https://calendly.com/..." />
-      </div>
+      </Section>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <h2 className="font-semibold text-gray-800">Telegram Notifications</h2>
-        <div className="text-sm text-gray-500 space-y-1">
-          <p>Bot Token and Chat ID are set in your <code className="bg-gray-100 px-1 rounded">.env.local</code> file.</p>
-          <p>
-            <code className="bg-gray-100 px-1 rounded">TELEGRAM_BOT_TOKEN</code> and{' '}
-            <code className="bg-gray-100 px-1 rounded">TELEGRAM_CHAT_ID</code>
-          </p>
-        </div>
+      <Section title="Telegram Notifications">
+        <p className="text-[13px] text-[#6e6e73] leading-relaxed">
+          Bot token and chat ID are set via environment variables in your Vercel project settings.
+        </p>
         <div>
           <button
             onClick={handleTestTelegram}
             disabled={testingTelegram}
-            className="inline-flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium text-white disabled:opacity-50 transition-opacity hover:opacity-90"
+            style={{ background: '#1d1d1f' }}
           >
-            <Bell size={15} />
+            <Bell size={14} />
             {testingTelegram ? 'Sending…' : 'Test notification'}
           </button>
-          {telegramMsg && <p className="text-sm text-gray-600 mt-2">{telegramMsg}</p>}
+          {telegramMsg && <p className="text-[13px] text-[#6e6e73] mt-2">{telegramMsg}</p>}
         </div>
-      </div>
-    </div>
-  )
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  placeholder?: string
-}) {
-  return (
-    <div>
-      <label className="text-xs font-medium text-gray-500 block mb-1">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      </Section>
     </div>
   )
 }
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-gray-400">Loading…</div>}>
+    <Suspense fallback={<div className="p-8 text-[13px] text-[#86868b]">Loading…</div>}>
       <SettingsInner />
     </Suspense>
   )

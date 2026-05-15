@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Mail } from 'lucide-react'
+import { Mail, CheckCircle } from 'lucide-react'
 
 interface Props {
   connected: boolean
@@ -28,15 +28,14 @@ export default function ConnectGmailButton({ connected, gmailAddress, onDisconne
   if (connected) {
     return (
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-          <Mail size={16} />
+        <div className="flex items-center gap-2 text-[13px] px-3.5 py-2 rounded-xl bg-[#e6f9ed] text-[#1a7a3a]">
+          <CheckCircle size={14} />
           <span>{gmailAddress ?? 'Gmail connected'}</span>
-          <span className="text-green-500">✓</span>
         </div>
         <button
           onClick={handleDisconnect}
           disabled={loading}
-          className="text-sm text-red-600 hover:underline disabled:opacity-50"
+          className="text-[13px] text-[#ff3b30] hover:opacity-70 disabled:opacity-50 transition-opacity"
         >
           {loading ? 'Disconnecting…' : 'Disconnect'}
         </button>
@@ -47,9 +46,10 @@ export default function ConnectGmailButton({ connected, gmailAddress, onDisconne
   return (
     <a
       href="/api/auth/gmail"
-      className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium text-white transition-opacity hover:opacity-90"
+      style={{ background: '#0071e3' }}
     >
-      <Mail size={16} />
+      <Mail size={15} />
       Connect Gmail
     </a>
   )
