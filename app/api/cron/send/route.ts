@@ -23,15 +23,6 @@ export async function GET(request: NextRequest) {
   }
 
   const s = settings as Settings
-  const utcHour = new Date().getUTCHours()
-  const isMorning = utcHour === 14
-  const isAfternoon = utcHour === 18
-
-  if (!isMorning && !isAfternoon) {
-    return Response.json({ status: 'not send time', hour: utcHour })
-  }
-
-  const halfRate = Math.floor((s.send_rate ?? 40) / 2)
 
   const { count: totalSentEver } = await supabaseService
     .from('sends')
@@ -39,40 +30,24 @@ export async function GET(request: NextRequest) {
     .eq('status', 'sent')
 
   const variantBase = totalSentEver ?? 0
+  const dailyRate = s.send_rate ?? 40
 
   const toSend: Array<{ lead: Lead; emailNum: 1 | 2 | 3 | 4; threadId?: string }> = []
 
-  if (isMorning) {
-    const { data: newLeads } = await supabaseService
-      .from('leads')
-      .select('*')
-      .eq('status', 'new')
-      .not('email', 'is', null)
-      .order('score', { ascending: false })
-      .limit(halfRate)
+  const { data: newLeads } = await supabaseService
+    .from('leads')
+    .select('*')
+    .eq('status', 'new')
+    .not('email', 'is', null)
+    .order('score', { ascending: false })
+    .limit(dailyRate)
 
-    for (const lead of (newLeads ?? []) as Lead[]) {
-      toSend.push({ lead, emailNum: 1 })
-    }
-
-    const followUps = await getFollowUps(halfRate - toSend.length)
-    toSend.push(...followUps)
-  } else {
-    const { data: newLeads } = await supabaseService
-      .from('leads')
-      .select('*')
-      .eq('status', 'new')
-      .not('email', 'is', null)
-      .order('score', { ascending: false })
-      .limit(halfRate)
-
-    for (const lead of (newLeads ?? []) as Lead[]) {
-      toSend.push({ lead, emailNum: 1 })
-    }
-
-    const followUps = await getFollowUps(halfRate - toSend.length)
-    toSend.push(...followUps)
+  for (const lead of (newLeads ?? []) as Lead[]) {
+    toSend.push({ lead, emailNum: 1 })
   }
+
+  const followUps = await getFollowUps(dailyRate - toSend.length)
+  toSend.push(...followUps)
 
   let sentCount = 0
 
@@ -146,61 +121,53 @@ export async function GET(request: NextRequest) {
     .select('*', { count: 'exact', head: true })
     .gte('opened_at', todayStart.toISOString())
 
-  const firstCity = s.cities?.[0] ?? 'your area'
+  const { count: totalReplies } = await supabaseService
+    .from('replies')
+    .select('*', { count: 'exact', head: true })
+    .gte('received_at', todayStart.toISOString())
 
-  if (isMorning) {
-    await notify.morningBatchSent(sentCount, opensToday ?? 0, firstCity)
-  } else {
-    await notify.afternoonBatchSent(sentCount, totalToday ?? 0, opensToday ?? 0)
+  const { count: hotReplies } = await supabaseService
+    .from('replies')
+    .select('*', { count: 'exact', head: true })
+    .eq('category', 'HOT')
+    .gte('received_at', todayStart.toISOString())
 
-    const { count: totalReplies } = await supabaseService
-      .from('replies')
-      .select('*', { count: 'exact', head: true })
-      .gte('received_at', todayStart.toISOString())
+  const { count: warmReplies } = await supabaseService
+    .from('replies')
+    .select('*', { count: 'exact', head: true })
+    .eq('category', 'WARM')
+    .gte('received_at', todayStart.toISOString())
 
-    const { count: hotReplies } = await supabaseService
-      .from('replies')
-      .select('*', { count: 'exact', head: true })
-      .eq('category', 'HOT')
-      .gte('received_at', todayStart.toISOString())
+  const { data: customers } = await supabaseService
+    .from('leads')
+    .select('estimated_value')
+    .eq('status', 'customer')
 
-    const { count: warmReplies } = await supabaseService
-      .from('replies')
-      .select('*', { count: 'exact', head: true })
-      .eq('category', 'WARM')
-      .gte('received_at', todayStart.toISOString())
+  const customerCount = customers?.length ?? 0
+  const mrr = (customers ?? []).reduce(
+    (sum: number, c: { estimated_value: number }) => sum + (c.estimated_value ?? 400),
+    0
+  )
 
-    const { data: customers } = await supabaseService
-      .from('leads')
-      .select('estimated_value')
-      .eq('status', 'customer')
+  const { count: pipelineLeads } = await supabaseService
+    .from('leads')
+    .select('*', { count: 'exact', head: true })
+    .in('status', ['sent', 'opened', 'replied', 'demo'])
 
-    const customerCount = customers?.length ?? 0
-    const mrr = (customers ?? []).reduce(
-      (s: number, c: { estimated_value: number }) => s + (c.estimated_value ?? 400),
-      0
-    )
+  const sent = totalToday ?? 0
+  const opens = opensToday ?? 0
 
-    const { count: pipelineLeads } = await supabaseService
-      .from('leads')
-      .select('*', { count: 'exact', head: true })
-      .in('status', ['sent', 'opened', 'replied', 'demo'])
-
-    const sent = totalToday ?? 0
-    const opens = opensToday ?? 0
-
-    await notify.dailySummary({
-      sent,
-      opens,
-      openRate: sent > 0 ? (opens / sent) * 100 : 0,
-      replies: totalReplies ?? 0,
-      hot: hotReplies ?? 0,
-      warm: warmReplies ?? 0,
-      customers: customerCount,
-      mrr,
-      pipelineLeads: pipelineLeads ?? 0,
-    })
-  }
+  await notify.dailySummary({
+    sent,
+    opens,
+    openRate: sent > 0 ? (opens / sent) * 100 : 0,
+    replies: totalReplies ?? 0,
+    hot: hotReplies ?? 0,
+    warm: warmReplies ?? 0,
+    customers: customerCount,
+    mrr,
+    pipelineLeads: pipelineLeads ?? 0,
+  })
 
   return Response.json({ sent: sentCount })
 }
