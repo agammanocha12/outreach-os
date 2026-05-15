@@ -34,6 +34,7 @@ export async function POST() {
       website: null,
       phone: null,
       estimated_value: 400,
+      notes: null,
       created_at: new Date().toISOString(),
     }
 
