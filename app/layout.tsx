@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${geist.variable} h-full`}>
-      <body className="h-full flex bg-gray-50 text-gray-900" style={{ fontFamily: 'var(--font-geist-sans), Arial, sans-serif' }}>
+      <body className="h-full flex bg-[#f5f5f7] text-[#1d1d1f]" style={{ fontFamily: 'var(--font-geist-sans), Arial, sans-serif' }}>
         <Sidebar />
         <main className="flex-1 overflow-auto">{children}</main>
       </body>

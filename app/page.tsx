@@ -86,7 +86,7 @@ export default function DashboardPage() {
   const s = stats
 
   return (
-    <div className="p-8 space-y-6 max-w-6xl">
+    <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Dashboard</h1>
@@ -100,7 +100,7 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <StatsCard label="Total Leads" value={(s?.totalLeads ?? 0).toLocaleString()} sub={`${s?.pipelineLeads ?? 0} in pipeline`} color="blue" />
         <StatsCard label="Emails Sent" value={(s?.totalSent ?? 0).toLocaleString()} sub={`${s?.sentToday ?? 0} today`} color="purple" />
         <StatsCard label="Reply Rate" value={`${s?.replyRate ?? 0}%`} sub={`${s?.hotReplies ?? 0} hot · ${s?.warmReplies ?? 0} warm`} color="orange" />

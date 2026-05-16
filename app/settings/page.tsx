@@ -125,7 +125,7 @@ function SettingsInner() {
   if (loading) return <div className="p-8 text-[13px] text-[#86868b]">Loading settings…</div>
 
   return (
-    <div className="p-8 space-y-4 max-w-2xl">
+    <div className="p-8 space-y-4 max-w-3xl">
       <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Settings</h1>

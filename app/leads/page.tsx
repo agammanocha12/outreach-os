@@ -42,7 +42,7 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="p-8 space-y-5 max-w-6xl">
+    <div className="p-8 space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight text-[#1d1d1f]">Leads</h1>
