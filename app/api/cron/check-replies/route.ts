@@ -5,6 +5,32 @@ import { notify } from '@/lib/telegram'
 import { NextRequest } from 'next/server'
 import type { Settings } from '@/lib/types'
 
+function isBounce(body: string, from: string, subject: string): boolean {
+  const f = from.toLowerCase()
+  if (f.includes('mailer-daemon') || f.includes('postmaster@') || f.includes('mailerdaemon') || f.includes('mail-daemon')) {
+    return true
+  }
+  const s = subject.toLowerCase()
+  const subjectHits = [
+    'delivery status notification', 'undelivered mail returned', 'mail delivery failed',
+    'returned mail', 'delivery failure', 'failure notice', 'mail delivery subsystem',
+    'undeliverable', 'message not delivered', "couldn't be delivered", 'could not be delivered',
+    'delivery has failed', 'permanent failure', 'address not found',
+  ]
+  if (subjectHits.some(h => s.includes(h))) return true
+  const b = body.toLowerCase()
+  const bodyHits = [
+    'mail delivery subsystem', 'delivery status notification', 'address not found',
+    'user unknown', 'mailbox unavailable', 'recipient address rejected',
+    "server couldn't find", 'delivery has failed to these recipients',
+    "wasn't delivered to", 'no such user', 'recipient not found',
+    'mailbox does not exist', 'undelivered mail returned to sender',
+    'permanent failure', 'smtp error 550',
+  ]
+  if (bodyHits.some(h => b.includes(h))) return true
+  return false
+}
+
 export async function GET(request: NextRequest) {
   const auth = request.headers.get('authorization')
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -37,7 +63,9 @@ export async function GET(request: NextRequest) {
   for (const msg of messages) {
     if (!msg.id) continue
     try {
-      const { body, threadId } = await getMessageBody(msg.id, s.gmail_refresh_token!)
+      const { body, threadId, from, subject } = await getMessageBody(msg.id, s.gmail_refresh_token!)
+
+      if (isBounce(body, from, subject)) continue
 
       const { data: send } = await supabaseService
         .from('sends')
