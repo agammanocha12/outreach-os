@@ -22,7 +22,7 @@ if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
   )
 }
 
-let scraperBusy = false
+let jobBusy = false
 
 async function send(text: string) {
   try {
@@ -36,23 +36,27 @@ async function send(text: string) {
   }
 }
 
-function parseCommand(text: string): { niche: string; cities: string; count: string } | null {
+type Command =
+  | { type: 'scrape'; niche: string; cities: string; count: string }
+  | { type: 'email' }
+
+function parseCommand(text: string): Command | null {
   const lower = text.trim().toLowerCase()
-  if (lower === 'scrape') {
-    return { niche: DEFAULT_NICHE, cities: DEFAULT_CITIES, count: DEFAULT_COUNT }
-  }
+  if (lower === 'email') return { type: 'email' }
+  if (lower === 'scrape') return { type: 'scrape', niche: DEFAULT_NICHE, cities: DEFAULT_CITIES, count: DEFAULT_COUNT }
   if (lower.startsWith('scrape')) {
     const rest = text.trim().slice(6).trim()
-    if (!rest) return { niche: DEFAULT_NICHE, cities: DEFAULT_CITIES, count: DEFAULT_COUNT }
+    if (!rest) return { type: 'scrape', niche: DEFAULT_NICHE, cities: DEFAULT_CITIES, count: DEFAULT_COUNT }
     const parts = rest.split('|').map(p => p.trim())
     if (parts.length >= 2) {
       return {
+        type: 'scrape',
         niche: parts[0] || DEFAULT_NICHE,
         cities: parts[1] || DEFAULT_CITIES,
         count: parts[2] || DEFAULT_COUNT,
       }
     }
-    return { niche: rest, cities: DEFAULT_CITIES, count: DEFAULT_COUNT }
+    return { type: 'scrape', niche: rest, cities: DEFAULT_CITIES, count: DEFAULT_COUNT }
   }
   return null
 }
@@ -83,27 +87,72 @@ async function runScrapeJob(
   count: string,
   source: string
 ): Promise<void> {
-  if (scraperBusy) {
-    await send(`⏳ Scraper is already running — queued request from ${source} skipped (try again when it's done).`)
+  if (jobBusy) {
+    await send(`⏳ A job is already running — request from ${source} skipped (try again when it's done).`)
     return
   }
-  scraperBusy = true
+  jobBusy = true
   await send(
     `🔍 <b>Starting scrape</b> (${source})\nNiche: ${niche}\nCities: ${cities}\nTarget: ${count} businesses\n\nThis takes 5-15 minutes...`
   )
   try {
     await runScraper(niche, cities, count)
-    await send('✅ <b>Scrape complete!</b> Check your leads dashboard.')
+    await send('✅ <b>Scrape complete!</b>\n\nSend <code>email</code> to email all found leads now, or they\'ll go out automatically at 10am/2pm.')
   } catch (err) {
     await send(`❌ <b>Scrape failed:</b>\n<code>${(err as Error).message}</code>`)
   } finally {
-    scraperBusy = false
+    jobBusy = false
+  }
+}
+
+async function runEmailJob(): Promise<void> {
+  if (jobBusy) {
+    await send('⏳ A job is already running — try again when it finishes.')
+    return
+  }
+  jobBusy = true
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  const cronSecret = process.env.CRON_SECRET
+  if (!appUrl || !cronSecret) {
+    await send('❌ <b>Email failed:</b> APP_URL or CRON_SECRET not configured.')
+    jobBusy = false
+    return
+  }
+
+  await send('📧 <b>Sending emails to all new leads...</b>')
+
+  try {
+    let totalSent = 0
+    let batches = 0
+    while (batches < 20) {
+      const res = await fetch(`${appUrl}/api/cron/send`, {
+        headers: { authorization: `Bearer ${cronSecret}` },
+      })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Server error ${res.status}: ${text.slice(0, 300)}`)
+      }
+      const data = await res.json() as { sent?: number; status?: string }
+      if (data.status === 'paused or no gmail') {
+        throw new Error('System is paused or Gmail is not connected — check Settings')
+      }
+      const batch = data.sent ?? 0
+      totalSent += batch
+      batches++
+      if (batch === 0) break
+    }
+    await send(`✅ <b>Done!</b> Sent ${totalSent} emails to new leads.`)
+  } catch (err) {
+    await send(`❌ <b>Email failed:</b>\n<code>${(err as Error).message}</code>`)
+  } finally {
+    jobBusy = false
   }
 }
 
 async function pollTelegram() {
   let offset = 0
-  await send('🤖 <b>Bot online</b> — send "scrape" to start, or use the Scrape button on the website.\nCustom: <code>scrape HVAC | Nassau County NY | 200</code>')
+  await send('🤖 <b>Bot online</b>\n\n• <code>scrape</code> — scrape new leads\n• <code>email</code> — email all new leads now\n• <code>scrape HVAC | Nassau County NY | 200</code> — custom scrape')
   console.log('Telegram bot listening...')
 
   while (true) {
@@ -128,7 +177,11 @@ async function pollTelegram() {
         const cmd = parseCommand(text)
         if (!cmd) continue
 
-        await runScrapeJob(cmd.niche, cmd.cities, cmd.count, 'Telegram')
+        if (cmd.type === 'scrape') {
+          await runScrapeJob(cmd.niche, cmd.cities, cmd.count, 'Telegram')
+        } else if (cmd.type === 'email') {
+          await runEmailJob()
+        }
       }
     } catch (err) {
       console.log(`Telegram poll error: ${(err as Error).message}`)
