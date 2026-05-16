@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   }
 
   const s = settings as Settings
-  const since = new Date(Date.now() - 2 * 60 * 60 * 1000)
+  const since = new Date(Date.now() - 10 * 60 * 60 * 1000)
 
   let messages: { id?: string | null }[] = []
   try {

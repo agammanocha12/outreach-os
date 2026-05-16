@@ -73,7 +73,23 @@ CREATE INDEX IF NOT EXISTS idx_sends_scheduled ON sends(scheduled_for);
 CREATE INDEX IF NOT EXISTS idx_sends_variant ON sends(subject_variant);
 CREATE INDEX IF NOT EXISTS idx_replies_handled ON replies(handled);
 
+CREATE TABLE IF NOT EXISTS scrape_jobs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  niche TEXT NOT NULL,
+  cities TEXT NOT NULL,
+  count INT NOT NULL DEFAULT 400,
+  status TEXT DEFAULT 'pending',
+  source TEXT DEFAULT 'web',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  result TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_scrape_jobs_status ON scrape_jobs(status, created_at);
+
 ALTER TABLE leads DISABLE ROW LEVEL SECURITY;
 ALTER TABLE sends DISABLE ROW LEVEL SECURITY;
 ALTER TABLE replies DISABLE ROW LEVEL SECURITY;
 ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE scrape_jobs DISABLE ROW LEVEL SECURITY;

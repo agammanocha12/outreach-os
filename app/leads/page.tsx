@@ -4,11 +4,18 @@ import LeadsTable from '@/components/LeadsTable'
 import type { Lead } from '@/lib/types'
 import { RefreshCw, Search } from 'lucide-react'
 
+const DEFAULT_NICHE = 'HVAC and plumbing'
+const DEFAULT_CITIES = 'Suffolk County NY,Nassau County NY,Queens NY,Long Island NY'
+
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [showScrapeModal, setShowScrapeModal] = useState(false)
-  const [scrapeCmd, setScrapeCmd] = useState('')
+  const [niche, setNiche] = useState(DEFAULT_NICHE)
+  const [cities, setCities] = useState(DEFAULT_CITIES)
+  const [count, setCount] = useState(400)
+  const [scrapeStatus, setScrapeStatus] = useState('')
+  const [scraping, setScraping] = useState(false)
 
   async function fetchLeads() {
     setLoading(true)
@@ -36,8 +43,34 @@ export default function LeadsPage() {
     await fetch(`/api/leads/${id}`, { method: 'DELETE' })
   }
 
+  async function handleStartScrape() {
+    setScraping(true)
+    setScrapeStatus('')
+    try {
+      const res = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ niche, cities, count }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setScrapeStatus('Queued — bot will start scraping within 10 seconds. Telegram will notify when done.')
+        setTimeout(() => setShowScrapeModal(false), 2500)
+      } else {
+        setScrapeStatus(`Error: ${data.error}${data.details ? ' — ' + data.details : ''}`)
+      }
+    } catch (err) {
+      setScrapeStatus(`Error: ${(err as Error).message}`)
+    } finally {
+      setScraping(false)
+    }
+  }
+
   function openScrapeModal() {
-    setScrapeCmd('npm run scrape -- "HVAC and plumbing" "Suffolk County NY,Nassau County NY,Queens NY,Long Island NY" 400')
+    setNiche(DEFAULT_NICHE)
+    setCities(DEFAULT_CITIES)
+    setCount(400)
+    setScrapeStatus('')
     setShowScrapeModal(true)
   }
 
@@ -79,27 +112,60 @@ export default function LeadsPage() {
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full mx-4 shadow-[0_24px_64px_rgba(0,0,0,0.16)]">
             <h2 className="font-semibold text-[17px] text-[#1d1d1f] mb-2">Scrape New Leads</h2>
             <p className="text-[13px] text-[#6e6e73] mb-4 leading-relaxed">
-              Run this command in your local terminal. It scrapes Google Maps and adds leads directly to your database.
+              Queues a job for the bot running on your machine. You&apos;ll get a Telegram notification when it starts and when it finishes.
             </p>
-            <div className="bg-[#1d1d1f] text-[#30d158] rounded-xl p-4 font-mono text-[12px] break-all mb-4 leading-relaxed">
-              {scrapeCmd}
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-medium text-[#86868b] uppercase tracking-wide block mb-1.5">Niche</label>
+                <input
+                  type="text"
+                  value={niche}
+                  onChange={e => setNiche(e.target.value)}
+                  className="w-full rounded-xl px-3.5 py-2.5 text-[13px] bg-[#f5f5f7] border-0 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/30"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-[#86868b] uppercase tracking-wide block mb-1.5">Cities (comma-separated)</label>
+                <textarea
+                  value={cities}
+                  onChange={e => setCities(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-xl px-3.5 py-2.5 text-[13px] bg-[#f5f5f7] border-0 resize-none focus:outline-none focus:ring-2 focus:ring-[#0071e3]/30"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-[#86868b] uppercase tracking-wide block mb-1.5">Target count</label>
+                <input
+                  type="number"
+                  value={count}
+                  onChange={e => setCount(parseInt(e.target.value) || 0)}
+                  className="w-32 rounded-xl px-3.5 py-2.5 text-[13px] bg-[#f5f5f7] border-0 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/30"
+                />
+              </div>
             </div>
-            <p className="text-[11px] text-[#86868b] mb-5">
-              You&apos;ll get a Telegram notification when it completes with the lead count.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => navigator.clipboard.writeText(scrapeCmd)}
-                className="px-4 py-2 text-[13px] font-medium rounded-xl bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#eaeaec] transition-colors"
-              >
-                Copy command
-              </button>
+
+            {scrapeStatus && (
+              <p className={`text-[12px] mt-4 ${scrapeStatus.startsWith('Error') ? 'text-red-600' : 'text-[#1a7a3a]'}`}>
+                {scrapeStatus}
+              </p>
+            )}
+
+            <div className="flex justify-end gap-2 mt-5">
               <button
                 onClick={() => setShowScrapeModal(false)}
-                className="px-4 py-2 text-[13px] font-medium rounded-xl text-white transition-opacity hover:opacity-90"
+                disabled={scraping}
+                className="px-4 py-2 text-[13px] font-medium rounded-xl bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#eaeaec] transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStartScrape}
+                disabled={scraping || !niche || !cities}
+                className="px-4 py-2 text-[13px] font-medium rounded-xl text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 style={{ background: '#0071e3' }}
               >
-                Done
+                {scraping ? 'Queueing…' : 'Start scrape'}
               </button>
             </div>
           </div>

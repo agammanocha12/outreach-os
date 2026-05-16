@@ -169,6 +169,15 @@ export async function GET(request: NextRequest) {
     pipelineLeads: pipelineLeads ?? 0,
   })
 
+  // Check for replies inline (no dedicated cron needed on Hobby plan)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  const cronSecret = process.env.CRON_SECRET
+  if (appUrl && cronSecret) {
+    fetch(`${appUrl}/api/cron/check-replies`, {
+      headers: { authorization: `Bearer ${cronSecret}` },
+    }).catch(() => {})
+  }
+
   return Response.json({ sent: sentCount })
 }
 
